@@ -130,8 +130,10 @@
       <h2>Under-bed cupboards</h2>
       <div class="grouphead" id="headM">Side 1</div>
       <div id="slotsM"></div>
+      <label class="tgl"><input type="checkbox" id="sflipM"> Flip side 1 end-for-end (180°)</label>
       <div class="grouphead" id="headP">Side 2</div>
       <div id="slotsP"></div>
+      <label class="tgl"><input type="checkbox" id="sflipP"> Flip side 2 end-for-end (180°)</label>
       <div class="grouphead">Tunnel end (max 40 cm wide)</div>
       <div id="slotsE"></div>
       <div class="note" id="slotStats"></div>
@@ -953,6 +955,14 @@
   ['Head','2nd','3rd','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsM'),nm,'slotsMinus',i,false); });
   ['Head','2nd','3rd','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsP'),nm,'slotsPlus',i,false); });
   slotRow(document.getElementById('slotsE'),'Unit','slotEnd',0,true);
+  // flip a side end-for-end: reverse its slot order (ticking again flips it back)
+  [['sflipM','slotsMinus'],['sflipP','slotsPlus']].forEach(function(p){
+    document.getElementById(p[0]).addEventListener('change',function(){
+      S[p[1]].reverse();
+      slotSyncs.forEach(function(f){f();});
+      build();
+    });
+  });
   var sw=document.getElementById('duvetSw');
   DUVETS.forEach(function(d,i){
     var b=document.createElement('button');
