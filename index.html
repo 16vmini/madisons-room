@@ -1,0 +1,1042 @@
+<title>Madison's Room — Bookshelf Bed Planner</title>
+<style>
+  :root{
+    --bg:#F3F1EC; --panel:#FFFFFF; --ink:#2E2A26; --muted:#7A736A;
+    --line:#E2DDD4; --accent:#5E7F66; --accent-soft:#5E7F6622;
+    --warn:#B0563F; --chip:#EFECE5;
+    --disp:'Palatino Linotype','Book Antiqua',Georgia,serif;
+    --ui:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#211F1C; --panel:#2B2925; --ink:#EDE9E2; --muted:#9B948A;
+      --line:#3A3733; --accent:#8FB098; --accent-soft:#8FB09826; --warn:#D98A72; --chip:#343128; }
+  }
+  :root[data-theme="light"]{ --bg:#F3F1EC; --panel:#FFFFFF; --ink:#2E2A26; --muted:#7A736A;
+    --line:#E2DDD4; --accent:#5E7F66; --accent-soft:#5E7F6622; --warn:#B0563F; --chip:#EFECE5; }
+  :root[data-theme="dark"]{ --bg:#211F1C; --panel:#2B2925; --ink:#EDE9E2; --muted:#9B948A;
+    --line:#3A3733; --accent:#8FB098; --accent-soft:#8FB09826; --warn:#D98A72; --chip:#343128; }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.45}
+  header{padding:18px 22px 10px}
+  h1{font-family:var(--disp);font-size:26px;margin:0;letter-spacing:.2px;text-wrap:balance}
+  .sub{color:var(--muted);margin-top:3px;font-size:13px}
+  .sub b{color:var(--ink);font-weight:600}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;padding:0 14px 18px;align-items:start}
+  @media (max-width:860px){ main{grid-template-columns:1fr} }
+
+  /* ------- 3D viewport ------- */
+  #viewport{position:relative;height:min(72vh,640px);border:1px solid var(--line);border-radius:10px;
+    background:linear-gradient(180deg,var(--panel),var(--bg));overflow:hidden;cursor:grab;touch-action:none;user-select:none}
+  #viewport:active{cursor:grabbing}
+  #stage{position:absolute;left:50%;top:54%;perspective:1700px;perspective-origin:50% 40%}
+  #world{position:absolute;transform-style:preserve-3d}
+  #world *{transform-style:preserve-3d}
+  .box{position:absolute;width:0;height:0}
+  .face{position:absolute;left:50%;top:50%;backface-visibility:hidden}
+  .wallgrp .face{transition:opacity .28s ease}
+  @media (prefers-reduced-motion: reduce){ .wallgrp .face{transition:none} }
+  .ghosted .face{opacity:.07}
+  .hud{position:absolute;left:12px;bottom:10px;color:var(--muted);font-size:12px;pointer-events:none}
+  .viewbtns{position:absolute;right:10px;top:10px;display:flex;gap:6px}
+  .viewbtns button{background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    border-radius:7px;padding:5px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+  .viewbtns button:hover{border-color:var(--accent)}
+  .viewbtns button:focus-visible,.swatch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* ------- control panel ------- */
+  aside{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .card h2{font-family:var(--disp);font-size:15px;margin:0 0 10px;letter-spacing:.3px}
+  .row{display:flex;align-items:center;gap:10px;margin:8px 0}
+  .row label{flex:0 0 118px;color:var(--muted);font-size:12.5px}
+  .row output{flex:0 0 58px;text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+  input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+  select{flex:1;background:var(--chip);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit;font-size:12.5px}
+  .tgl{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px;cursor:pointer}
+  .tgl input{accent-color:var(--accent);width:15px;height:15px}
+  .swatches{display:flex;gap:8px;margin-top:4px}
+  .swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+  .swatch.on{border-color:var(--ink)}
+  .warnings{display:flex;flex-direction:column;gap:6px}
+  .warnchip{background:var(--accent-soft);border-left:3px solid var(--warn);color:var(--ink);
+    padding:6px 9px;border-radius:0 6px 6px 0;font-size:12.5px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{background:var(--chip);border-radius:8px;padding:8px 10px}
+  .stat .v{font-family:var(--disp);font-size:19px;font-variant-numeric:tabular-nums}
+  .stat .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-top:1px}
+  #plan{width:100%;display:block}
+  ul.shop{margin:6px 0 0;padding-left:18px}
+  ul.shop li{margin:4px 0;font-size:12.8px}
+  .note{color:var(--muted);font-size:11.5px;margin-top:8px;line-height:1.5}
+  .grouphead{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin:10px 0 2px}
+  .ikea{flex:0 0 auto;font-size:11.5px;color:var(--accent);text-decoration:none;
+    border:1px solid var(--line);border-radius:6px;padding:3px 7px;white-space:nowrap}
+  .ikea:hover{border-color:var(--accent)}
+  #slotsCard .row label{flex:0 0 48px}
+  .mini{background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:7px;
+    padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+  .mini:hover{border-color:var(--accent)}
+  .tvj{transition:transform .9s cubic-bezier(.45,0,.25,1)}
+  @media (prefers-reduced-motion: reduce){ .tvj{transition:none} }
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+  .btnrow button{background:var(--chip);border:1px solid var(--line);color:var(--ink);
+    border-radius:7px;padding:6px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+  .btnrow button:hover{border-color:var(--accent)}
+  .btnrow button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #cfg{width:100%;margin-top:9px;background:var(--chip);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:6px 8px;font:12px Consolas,'Courier New',monospace;resize:vertical}
+</style>
+
+<header>
+  <h1>Madison's Room — Bookshelf Bed Planner</h1>
+  <div class="sub">Bedroom 2 · 17 Shelley Road · <b>3.53 m × 2.82 m</b> (11′7″ × 9′3″) · double mattress on 100 cm LASTARE cupboards with a crawl tunnel · drag the room to spin it</div>
+</header>
+
+<main>
+  <div id="viewport">
+    <div id="stage"><div id="world"></div></div>
+    <div class="viewbtns">
+      <button id="btn3d" type="button">3D view</button>
+      <button id="btnTop" type="button">Top view</button>
+    </div>
+    <div class="hud">drag = rotate · scroll = zoom</div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h2>The bed</h2>
+      <div class="row"><label for="orient">Bed direction</label>
+        <select id="orient">
+          <option value="SN">Head against bottom wall (chimney)</option>
+          <option value="NS">Head against top wall</option>
+          <option value="EW" selected>Head against left wall</option>
+        </select></div>
+      <div class="row"><label for="gapW">From left wall</label><input type="range" id="gapW" min="0" max="213" value="0" step="1"><output id="gapWv"></output></div>
+      <div class="row"><label for="gapN">From top wall</label><input type="range" id="gapN" min="0" max="142" value="122" step="1"><output id="gapNv"></output></div>
+      <div class="row"><label for="base">Base style</label>
+        <select id="base">
+          <option value="lastare">LASTARE cupboards — 100 cm + tunnel</option>
+          <option value="cubes1">Cube shelves — 1 row (39 cm)</option>
+          <option value="cubes2">Cube shelves — 2 rows (77 cm)</option>
+        </select></div>
+      <label class="tgl"><input type="checkbox" id="hb"> Tall bookcase headboard</label>
+      <label class="tgl"><input type="checkbox" id="lid" checked> Show platform &amp; mattress (untick to look inside)</label>
+      <div class="row" style="margin-top:10px"><label>Duvet colour</label>
+        <div class="swatches" id="duvetSw"></div></div>
+    </div>
+
+    <div class="card" id="slotsCard">
+      <h2>Under-bed cupboards</h2>
+      <div class="grouphead" id="headM">Side 1</div>
+      <div id="slotsM"></div>
+      <div class="grouphead" id="headP">Side 2</div>
+      <div id="slotsP"></div>
+      <div class="grouphead">Tunnel end (max 40 cm wide)</div>
+      <div id="slotsE"></div>
+      <div class="note" id="slotStats"></div>
+      <div class="note">Links open the exact item on ikea.com so you can check against the order. Ordered stock: 2 × 80 open, 2 × 60 with doors, 2 × 40 open, 1 × chest of drawers.</div>
+    </div>
+
+    <div class="card">
+      <h2>The room</h2>
+      <label class="tgl"><input type="checkbox" id="chOn" checked> Chimney breast (measured: 165 × 20 cm)</label>
+      <div class="row"><label for="chWall">Chimney wall</label>
+        <select id="chWall">
+          <option value="N">Top wall</option>
+          <option value="S" selected>Bottom wall</option>
+          <option value="W">Left wall</option>
+          <option value="E">Right wall</option>
+        </select></div>
+      <div class="row"><label for="chW">Chimney width</label><input type="range" id="chW" min="60" max="220" value="165" step="1"><output id="chWv"></output></div>
+      <div class="row"><label for="chD">Sticks out</label><input type="range" id="chD" min="10" max="60" value="20" step="1"><output id="chDv"></output></div>
+      <div class="row"><label for="chOff">Along the wall</label><input type="range" id="chOff" min="0" max="188" value="94" step="1"><output id="chOffv"></output></div>
+      <label class="tgl"><input type="checkbox" id="tv" checked> Swing-out TV on the chimney breast</label>
+      <div class="row"><label for="tvSize">TV size</label>
+        <select id="tvSize">
+          <option value="32">32-inch</option>
+          <option value="43" selected>43-inch</option>
+          <option value="50">50-inch</option>
+        </select></div>
+      <div class="row"><label for="tvSwing">TV swing</label><input type="range" id="tvSwing" min="0" max="90" value="35" step="1"><output id="tvSwingv"></output></div>
+      <div class="row"><label></label><button id="tvGo" type="button" class="mini">▶ Swing TV in / out</button></div>
+      <div class="row" style="margin-top:10px"><label for="doorWall">Door wall</label>
+        <select id="doorWall">
+          <option value="N" selected>Top wall</option>
+          <option value="W">Left wall</option>
+          <option value="S">Bottom wall</option>
+          <option value="E">Right wall</option>
+        </select></div>
+      <div class="row"><label for="doorOff">Door position</label><input type="range" id="doorOff" min="0" max="277" value="233" step="1"><output id="doorOffv"></output></div>
+      <div class="row"><label for="doorHinge">Door hinge</label>
+        <select id="doorHinge">
+          <option value="lo">Near end (left/top of opening)</option>
+          <option value="hi" selected>Far end — opens toward the window</option>
+        </select></div>
+      <div class="row"><label for="winW">Window width</label><input type="range" id="winW" min="60" max="200" value="75" step="5"><output id="winWv"></output></div>
+      <div class="row"><label for="winOff">Window centre</label><input type="range" id="winOff" min="38" max="244" value="211" step="1"><output id="winOffv"></output></div>
+      <label class="tgl" style="margin-top:10px"><input type="checkbox" id="desk" checked> Desk + chair in front of the window</label>
+      <label class="tgl"><input type="checkbox" id="ward"> Wardrobe</label>
+      <label class="tgl"><input type="checkbox" id="bc" checked> Floor-to-ceiling bookcase (door wall)</label>
+      <div class="warnings" id="warns"></div>
+    </div>
+
+    <div class="card">
+      <h2>Floor plan</h2>
+      <canvas id="plan" height="230"></canvas>
+      <div class="stats" style="margin-top:10px">
+        <div class="stat"><div class="v" id="stCub">–</div><div class="k" id="stCubK">cupboards</div></div>
+        <div class="stat"><div class="v" id="stStor">–</div><div class="k">storage</div></div>
+        <div class="stat"><div class="v" id="stBedH">–</div><div class="k">top of mattress</div></div>
+        <div class="stat"><div class="v" id="stFree">–</div><div class="k">free floor</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Build / shopping list</h2>
+      <ul class="shop" id="shop"></ul>
+      <div class="note">IKEA order placed — truck delivery Monday 17 August, 07:00–19:00. IKEA flags LASTARE as a tipping hazard: bolt the frames to each other, screw the platform to every frame, and anchor wall-side frames to the wall. Chimney breast measured 165 × 20 cm (94 cm recess either side); ceiling assumed ≈ 2.4 m. The BILLY run is 237 cm tall — check ceiling height before assembling the extensions!</div>
+    </div>
+
+    <div class="card">
+      <h2>Export</h2>
+      <div class="btnrow">
+        <button id="btnPng" type="button">Download floor plan (PNG)</button>
+        <button id="btnCopy" type="button">Copy settings</button>
+        <button id="btnApply" type="button">Apply pasted settings</button>
+      </div>
+      <textarea id="cfg" rows="4" spellcheck="false" aria-label="Layout settings text"></textarea>
+      <div class="note">The settings text updates as you tweak — copy it to save or share this exact layout, or paste a saved one back and press Apply. The PNG plan is handy to print and take measuring.</div>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  // ---- room constants (cm) ----
+  var W = 353, D = 282, H = 240, T = 10;          // room w, d, wall height, wall thickness
+  var BEDW = 140;                                  // platform width (42+56+42 for LASTARE mode)
+  function bedL(){ return S.base==='lastare' ? 200 : 195; }   // platform length
+  var HBD = 32;                                    // headboard depth
+  function hbH(){ return S.base==='lastare' ? 200 : 145; }    // headboard height
+  var DOOR = { w: 76, h: 198 };                    // wall + position live in S
+  var WIN  = { h: 120, sill: 90 };                 // width + position live in S (east wall)
+
+  var MAT = {
+    wall:'#EFE8DB', floorA:'#C9A177', floorB:'#BC9166',
+    wood:'#D8B58A', woodFrame:'#C49A6C', ply:'#E6CD9F',
+    cubby:'#463B31', mattress:'#F2EEE6', pillow:'#FAF8F3',
+    door:'#D6CBBA', glassA:'#BCD4DC', chimney:'#E7DFD1',
+    desk:'#C7A87E', wardrobe:'#CBAF88',
+    cup:'#F4F2ED', cupLine:'#D9D5CC', radiator:'#EAE7E0',
+    billy:'#6E4F3A'
+  };
+  var BOOKS = ['#B5654F','#71876B','#C8A24B','#5B7A94','#8A6B8F','#C0704F','#4E6E5D','#9A8352'];
+  var DUVETS = [
+    {name:'Sage',   c:'#7D9682'}, {name:'Dusty rose', c:'#C2848A'},
+    {name:'Mustard',c:'#C9A24B'}, {name:'Indigo', c:'#5C6B8A'},
+    {name:'Cream',  c:'#E8E0D0'}
+  ];
+
+  // LASTARE catalogue (prices/articles verified on ikea.com/gb) + what the order contains
+  var UNITS={
+    o80:{w:80,kind:'open',   label:'80 cm frame (open)',        price:35, art:'005.964.82', url:'https://www.ikea.com/gb/en/p/lastare-frame-white-00596482/'},
+    d80:{w:80,kind:'doors',  label:'80 cm frame + doors',       price:45, art:'305.964.71', url:'https://www.ikea.com/gb/en/p/lastare-frame-with-doors-white-30596471/'},
+    d60:{w:60,kind:'doors',  label:'60 cm frame + doors',       price:40, art:'905.964.68', url:'https://www.ikea.com/gb/en/p/lastare-frame-with-doors-white-90596468/'},
+    o40:{w:40,kind:'open',   label:'40 cm frame (open)',        price:25, art:'605.964.84', url:'https://www.ikea.com/gb/en/p/lastare-frame-white-60596484/'},
+    dr40:{w:40,kind:'drawers',label:'40 cm chest of 4 drawers', price:65, art:'205.993.52', url:'https://www.ikea.com/gb/en/p/lastare-chest-of-4-drawers-white-20599352/'},
+    none:{w:0,kind:'none',   label:'— empty —'}
+  };
+  var STOCK={o80:2,d60:2,o40:2,dr40:1,d80:0};
+
+  // ---- state (defaults = measured room) ----
+  var S = {
+    orient:'EW', gapW:0, gapN:122, base:'lastare', hb:false, duvet:0, lid:true,
+    slotsMinus:['o80','d60','o40'], slotsPlus:['o80','d60','o40'], slotEnd:'dr40',
+    chOn:true, chWall:'S', chW:165, chD:20, chOff:94,
+    tv:true, tvSize:'43', tvSwing:35, bc:true,
+    doorWall:'N', doorOff:233, doorHinge:'hi', winW:75, winOff:211,
+    desk:true, ward:false,
+    yaw:33, pitch:27, zoom:1
+  };
+
+  // ---- tiny helpers ----
+  function shade(hex,f){
+    var n=parseInt(hex.slice(1),16), r=n>>16&255,g=n>>8&255,b=n&255;
+    r=Math.min(255,Math.round(r*f)); g=Math.min(255,Math.round(g*f)); b=Math.min(255,Math.round(b*f));
+    return 'rgb('+r+','+g+','+b+')';
+  }
+  function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296; }; }
+  function el(tag,cls,parent){ var e=document.createElement(tag); if(cls)e.className=cls; if(parent)parent.appendChild(e); return e; }
+
+  var FACES=['front','back','left','right','top','bottom'];
+  var SH={top:1.13,front:1,back:.9,left:.85,right:.92,bottom:.65};
+  function box(parent,o){
+    var b=el('div','box '+(o.cls||''),null);
+    b.style.transform='translate3d('+o.x+'px,'+(-(o.y+o.h/2))+'px,'+o.z+'px)'+(o.ry?' rotateY('+o.ry+'deg)':'');
+    var dims={front:[o.w,o.h],back:[o.w,o.h],left:[o.d,o.h],right:[o.d,o.h],top:[o.w,o.d],bottom:[o.w,o.d]};
+    var tf={front:'rotateY(0deg) translateZ('+o.d/2+'px)',back:'rotateY(180deg) translateZ('+o.d/2+'px)',
+      right:'rotateY(90deg) translateZ('+o.w/2+'px)',left:'rotateY(-90deg) translateZ('+o.w/2+'px)',
+      top:'rotateX(90deg) translateZ('+o.h/2+'px)',bottom:'rotateX(-90deg) translateZ('+o.h/2+'px)'};
+    var out={root:b,faces:{}};
+    for(var i=0;i<6;i++){ var f=FACES[i];
+      if(o.skip&&o.skip.indexOf(f)>=0)continue;
+      var e=el('div','face f-'+f,b);
+      var dm=dims[f]; e.style.width=dm[0]+'px'; e.style.height=dm[1]+'px';
+      e.style.marginLeft=(-dm[0]/2)+'px'; e.style.marginTop=(-dm[1]/2)+'px';
+      e.style.transform=tf[f];
+      e.style.background=(o.tex&&o.tex[f])?o.tex[f]:shade(o.color,SH[f]);
+      if(o.radius)e.style.borderRadius=o.radius+'px';
+      out.faces[f]=e;
+    }
+    parent.appendChild(b); return out;
+  }
+
+  // cube-shelf cubby grid on a face
+  function cubbies(face,cols,rws,seedBase,frameCol,cellW){
+    var rnd=mulberry32(seedBase);
+    var narrow = cellW && (cellW/cols) < 55;   // slim bays: fewer, chunkier books, no baskets
+    face.style.background=frameCol||shade(MAT.woodFrame,.95);
+    face.style.display='grid';
+    face.style.gridTemplateColumns='repeat('+cols+',1fr)';
+    face.style.gridTemplateRows='repeat('+rws+',1fr)';
+    face.style.gap='5px'; face.style.padding='5px';
+    for(var i=0;i<cols*rws;i++){
+      var c=el('div',null,face);
+      c.style.background=MAT.cubby;
+      c.style.boxShadow='inset 0 3px 6px rgba(0,0,0,.45)';
+      var kind=rnd();
+      if(narrow&&kind<0.82) kind=0.3;   // slim bays: always books, never baskets
+      if(kind<0.62){ // books
+        c.style.display='flex'; c.style.alignItems='flex-end';
+        c.style.justifyContent='center'; c.style.gap='1px'; c.style.padding='0 2px';
+        var n=narrow ? 2+Math.floor(rnd()*2) : 3+Math.floor(rnd()*4);
+        for(var j=0;j<n;j++){ var s=el('div',null,c);
+          s.style.width=(4+rnd()*5)+'px'; s.style.height=(55+rnd()*35)+'%';
+          s.style.background=BOOKS[Math.floor(rnd()*BOOKS.length)];
+          s.style.borderRadius='1px 1px 0 0';
+        }
+      } else if(kind<0.82){ // basket
+        var bk=el('div',null,c);
+        bk.style.margin='auto auto 2px'; bk.style.width='78%'; bk.style.height='62%';
+        bk.style.background='repeating-linear-gradient(0deg,#A98D65 0 4px,#987c56 4px 8px)';
+        bk.style.borderRadius='3px';
+        c.style.display='flex';
+      } // else empty
+    }
+  }
+
+  // white cupboard front with door split + handles (LASTARE style)
+  function cupboardDoors(face,uw){
+    face.style.background=MAT.cup;
+    face.style.boxShadow='inset 0 0 0 2px '+MAT.cupLine;
+    if(uw>=78){
+      var d=el('div',null,face);
+      d.style.cssText='position:absolute;left:50%;top:3%;width:2px;height:94%;margin-left:-1px;background:'+MAT.cupLine;
+    }
+    var n=uw>=78?2:1;
+    for(var i=0;i<n;i++){
+      var h=el('div',null,face);
+      h.style.cssText='position:absolute;top:44%;width:4px;height:22px;border-radius:2px;background:#9A948B;'+
+        (n===2 ? (i===0?'left:calc(50% - 11px);':'left:calc(50% + 7px);') : 'right:9px;');
+    }
+  }
+
+  // LASTARE chest of 4 drawers front
+  function drawerFronts(face){
+    face.style.background=MAT.cup;
+    face.style.boxShadow='inset 0 0 0 2px '+MAT.cupLine;
+    for(var i=1;i<4;i++){ var l=el('div',null,face);
+      l.style.cssText='position:absolute;left:4%;width:92%;height:2px;background:'+MAT.cupLine+';top:'+(i*25)+'%'; }
+    for(var j=0;j<4;j++){ var h=el('div',null,face);
+      h.style.cssText='position:absolute;left:50%;width:22px;height:4px;margin-left:-11px;border-radius:2px;background:#9A948B;top:'+(j*25+11)+'%'; }
+  }
+
+  // ---- geometry ----
+  function footprint(){
+    var L = bedL() + (S.hb?HBD:0);
+    var vertical = S.orient==='NS'||S.orient==='SN';
+    return vertical ? {fw:BEDW, fl:L} : {fw:L, fl:BEDW};
+  }
+  function bedRect(){ var f=footprint();
+    return {x:-W/2+S.gapW, z:-D/2+S.gapN, w:f.fw, l:f.fl}; }
+  function chimneyRect(){
+    var cw=S.chW, cd=S.chD, o=S.chOff;
+    if(S.chWall==='N') return {x:-W/2+o, z:-D/2,    w:cw, l:cd};
+    if(S.chWall==='S') return {x:-W/2+o, z: D/2-cd, w:cw, l:cd};
+    if(S.chWall==='W') return {x:-W/2,   z:-D/2+o,  w:cd, l:cw};
+    return {x:W/2-cd, z:-D/2+o, w:cd, l:cw};
+  }
+  // door geometry from S.doorWall / S.doorOff / S.doorHinge — hinge point, slab centre, swing quadrant
+  function doorGeom(){
+    var w=DOOR.w, o=S.doorOff, hi=S.doorHinge==='hi';
+    var horiz=(S.doorWall==='N'||S.doorWall==='S');
+    var hx,hz,cx,cz;
+    if(horiz){
+      hx=-W/2+o+(hi?w:0); hz=(S.doorWall==='N')?-D/2:D/2;
+      cx=-W/2+o+w/2;      cz=(S.doorWall==='N')?-D/2+1.5:D/2-1.5;
+    } else {
+      hz=-D/2+o+(hi?w:0); hx=(S.doorWall==='W')?-W/2:W/2;
+      cz=-D/2+o+w/2;      cx=(S.doorWall==='W')?-W/2+1.5:W/2-1.5;
+    }
+    var xPos = horiz ? !hi : (S.doorWall==='W');   // swing quadrant extends toward +x?
+    var zPos = horiz ? (S.doorWall==='N') : !hi;   // ... toward +z?
+    var zEdge = zPos?'100%':'0%';
+    var clip = 'polygon(50% 50%,'+(xPos?'100% 50%,100% ':'0% 50%,0% ')+zEdge+',50% '+zEdge+')';
+    var a0,a1;
+    if(xPos&&zPos){ a0=0; a1=Math.PI/2; }
+    else if(!xPos&&zPos){ a0=Math.PI/2; a1=Math.PI; }
+    else if(xPos&&!zPos){ a0=-Math.PI/2; a1=0; }
+    else { a0=Math.PI; a1=1.5*Math.PI; }
+    return {wall:S.doorWall,hx:hx,hz:hz,cx:cx,cz:cz,horiz:horiz,clip:clip,a0:a0,a1:a1};
+  }
+  // TV mount point on the chimney face + wall base rotation
+  function tvGeom(cr){
+    var sizes={'32':[71,40],'43':[96,56],'50':[111,63]};
+    var tw=sizes[S.tvSize][0], th=sizes[S.tvSize][1];
+    var B, mx, mz;
+    if(S.chWall==='S'){ B=0;   mx=cr.x+cr.w/2; mz=cr.z; }
+    else if(S.chWall==='N'){ B=180; mx=cr.x+cr.w/2; mz=cr.z+cr.l; }
+    else if(S.chWall==='W'){ B=-90; mx=cr.x+cr.w;   mz=cr.z+cr.l/2; }
+    else { B=90; mx=cr.x; mz=cr.z+cr.l/2; }
+    return {tw:tw, th:th, mx:mx, mz:mz, B:B};
+  }
+  // double-jointed articulating-arm pose (0 = folded flat, 90 = fully out + swivelled)
+  // g1: shoulder, d2: elbow relative to arm 1, d3: TV wrist relative to arm 2
+  function tvAngles(){
+    var t=S.tvSwing/90;
+    return {g1:-90+80*t, d2:180-105*t, d3:115*t-90, t:t};
+  }
+  // floor-to-ceiling bookcase run: fills the longer stretch of the door wall, stopping at the door
+  function bcRect(){
+    var along=(S.doorWall==='N'||S.doorWall==='S')?W:D;
+    var s1=S.doorOff-6, s2=along-S.doorOff-DOOR.w-6, len, start;
+    if(s1>=s2){ len=s1; start=0; } else { len=s2; start=S.doorOff+DOOR.w+6; }
+    len=Math.max(Math.min(len,200),0);   // the purchased BILLY combo is 200 cm wide
+    if(S.doorWall==='N') return {x:-W/2+start, z:-D/2,    w:len, l:30};
+    if(S.doorWall==='S') return {x:-W/2+start, z: D/2-30, w:len, l:30};
+    if(S.doorWall==='W') return {x:-W/2,    z:-D/2+start, w:30, l:len};
+    return {x:W/2-30, z:-D/2+start, w:30, l:len};
+  }
+  // which way each cupboard row faces, and whether it has room to open into the room
+  function spanOverlap(a0,al,b0,bl){ return a0 < b0+bl && b0 < a0+al; }
+  function sideDirs(){
+    if(S.orient==='NS') return {plus:'E', minus:'W'};
+    if(S.orient==='SN') return {plus:'W', minus:'E'};
+    return {plus:'N', minus:'S'};
+  }
+  function sideGap(dir){
+    var br=bedRect(), g, chBlocks;
+    if(dir==='E'){ g=W/2-(br.x+br.w); chBlocks=S.chWall==='E'&&spanOverlap(br.z,br.l,-D/2+S.chOff,S.chW); }
+    else if(dir==='W'){ g=br.x+W/2; chBlocks=S.chWall==='W'&&spanOverlap(br.z,br.l,-D/2+S.chOff,S.chW); }
+    else if(dir==='N'){ g=br.z+D/2; chBlocks=S.chWall==='N'&&spanOverlap(br.x,br.w,-W/2+S.chOff,S.chW); }
+    else { g=D/2-(br.z+br.l); chBlocks=S.chWall==='S'&&spanOverlap(br.x,br.w,-W/2+S.chOff,S.chW); }
+    if(S.chOn&&chBlocks) g-=S.chD;
+    return g;
+  }
+  function flippedSides(){
+    var d=sideDirs();
+    return {minus: sideGap(d.minus)<45, plus: sideGap(d.plus)<45};
+  }
+  function deskRect(){ return {x:W/2-57, z:-D/2+S.winOff-55, w:55, l:110}; }
+  function wardRect(){ return {x:-W/2+6, z:D/2-57, w:100, l:55}; }
+  function overlap(a,b){ return a.x < b.x+b.w && b.x < a.x+a.w && a.z < b.z+b.l && b.z < a.z+a.l; }
+
+  // ---- scene build ----
+  var world=document.getElementById('world');
+  var wallGroups={};
+  var tvJ1=null, tvJ2=null, tvJ3=null;
+
+  function build(){
+    clampSliders();
+    var dg=doorGeom(), winCz=-D/2+S.winOff;
+    world.innerHTML=''; wallGroups={}; tvJ1=tvJ2=tvJ3=null;
+
+    // floor
+    var planks='repeating-linear-gradient(90deg,'+MAT.floorA+' 0 58px,'+MAT.floorB+' 58px 61px)';
+    box(world,{w:W+2*T,h:12,d:D+2*T,x:0,y:-12,z:0,color:MAT.floorB,tex:{top:planks},skip:['bottom']});
+
+    // door swing arc + rug, drawn on a flat overlay just above the floor
+    var ov=el('div',null,world);
+    ov.style.width=W+'px'; ov.style.height=D+'px';
+    ov.style.position='absolute'; ov.style.left=(-W/2)+'px'; ov.style.top=(-D/2)+'px';
+    ov.style.transform='rotateX(90deg) translateZ(0.8px)';
+    ov.style.transformOrigin='50% 50%';
+    var arc=el('div',null,ov);
+    var R=DOOR.w;
+    arc.style.cssText='position:absolute;width:'+(2*R)+'px;height:'+(2*R)+'px;border-radius:50%;'+
+      'border:2px dashed rgba(90,80,70,.5);clip-path:'+dg.clip+';'+
+      'left:'+((dg.hx+W/2)-R)+'px;top:'+((dg.hz+D/2)-R)+'px';
+    var br=bedRect();
+    var eastFree=W/2-(br.x+br.w), westFree=br.x+W/2;
+    if(Math.max(eastFree,westFree)>130){
+      var rug=el('div',null,ov);
+      var rx=(eastFree>=westFree)? (br.x+br.w+eastFree/2) : (-W/2+westFree/2);
+      rug.style.cssText='position:absolute;width:150px;height:105px;border-radius:50%;'+
+        'background:'+DUVETS[S.duvet].c+'55;border:4px solid '+DUVETS[S.duvet].c+'88;'+
+        'left:'+((rx+W/2)-75)+'px;top:'+(D*0.35-52)+'px';
+    }
+
+    // walls (N,S,W,E) in ghost-able groups
+    function wall(id,opts){
+      var g=el('div','wallgrp',world); wallGroups[id]=g;
+      return box(g,opts);
+    }
+    wall('N',{w:W+2*T,h:H,d:T,x:0,y:0,z:-D/2-T/2,color:MAT.wall,skip:['bottom']});
+    wall('S',{w:W+2*T,h:H,d:T,x:0,y:0,z: D/2+T/2,color:MAT.wall,skip:['bottom']});
+    wall('W',{w:T,h:H,d:D,x:-W/2-T/2,y:0,z:0,color:MAT.wall,skip:['bottom']});
+    wall('E',{w:T,h:H,d:D,x: W/2+T/2,y:0,z:0,color:MAT.wall,skip:['bottom']});
+
+    // door: slab flush with its wall
+    var doorTex='linear-gradient(180deg,'+MAT.door+','+shade(MAT.door,.88)+')';
+    if(dg.horiz){
+      box(wallGroups[dg.wall],{w:DOOR.w,h:DOOR.h,d:3,x:dg.cx,y:0,z:dg.cz,
+        color:MAT.door,tex:{front:doorTex,back:doorTex}});
+    } else {
+      box(wallGroups[dg.wall],{w:3,h:DOOR.h,d:DOOR.w,x:dg.cx,y:0,z:dg.cz,
+        color:MAT.door,tex:{left:doorTex,right:doorTex}});
+    }
+
+    // window: glass slab flush with east wall + frame grid
+    var g=box(wallGroups['E'],{w:3,h:WIN.h,d:S.winW,x:W/2-1.5,y:WIN.sill,z:winCz,color:MAT.glassA});
+    ['left','right'].forEach(function(f){
+      var e=g.faces[f];
+      e.style.background='linear-gradient(180deg,#D9E7EB,'+MAT.glassA+')';
+      e.style.boxShadow='inset 0 0 0 5px #F6F3EC';
+      var bar=el('div',null,e); bar.style.cssText='position:absolute;left:50%;top:0;width:5px;height:100%;margin-left:-2.5px;background:#F6F3EC';
+      var bar2=el('div',null,e); bar2.style.cssText='position:absolute;top:50%;left:0;height:5px;width:100%;margin-top:-2.5px;background:#F6F3EC';
+    });
+    // radiator under the window (matches window width)
+    box(wallGroups['E'],{w:8,h:55,d:S.winW,x:W/2-5,y:13,z:winCz,color:MAT.radiator,
+      tex:{left:'repeating-linear-gradient(90deg,#EAE7E0 0 7px,#DDD9D0 7px 9px)'}});
+
+    // chimney breast
+    if(S.chOn){
+      var cr=chimneyRect();
+      box(world,{w:cr.w,h:H,d:cr.l,x:cr.x+cr.w/2,y:0,z:cr.z+cr.l/2,color:MAT.chimney,skip:['bottom']});
+      // swing-out TV on a double-jointed articulating arm
+      if(S.tv){
+        var g2=tvGeom(cr), an=tvAngles();
+        var tvG=el('div',null,world);
+        tvG.style.position='absolute';
+        tvG.style.transform='translate3d('+g2.mx+'px,-170px,'+g2.mz+'px) rotateY('+g2.B+'deg)';
+        box(tvG,{w:16,h:16,d:4,x:0,y:-8,z:-2,color:'#4A4642'});          // wall plate
+        tvJ1=el('div','tvj',tvG); tvJ1.style.position='absolute';        // shoulder
+        tvJ1.style.transform='rotateY('+an.g1+'deg)';
+        box(tvJ1,{w:7,h:7,d:26,x:0,y:-6,z:-12,color:'#57534E'});         // arm 1
+        tvJ2=el('div','tvj',tvJ1); tvJ2.style.position='absolute';       // elbow
+        tvJ2.style.transform='translate3d(0,0,-24px) rotateY('+an.d2+'deg)';
+        box(tvJ2,{w:7,h:7,d:26,x:0,y:1,z:-12,color:'#6B6660'});          // arm 2
+        tvJ3=el('div','tvj',tvJ2); tvJ3.style.position='absolute';       // wrist
+        tvJ3.style.transform='translate3d(0,0,-24px) rotateY('+an.d3+'deg)';
+        var tvb=box(tvJ3,{w:g2.tw,h:g2.th,d:5,x:0,y:-g2.th/2,z:-5,color:'#1B1A19',radius:3});
+        tvb.faces.back.style.background='linear-gradient(135deg,#2E3745,#12151B 60%)';
+        tvb.faces.back.style.boxShadow='inset 0 0 0 3px #0A0A0A';
+      }
+    }
+
+    // ---- the bed ----
+    var f=footprint(), bx=-W/2+S.gapW, bz=-D/2+S.gapN;
+    var cx=bx+f.fw/2, cz=bz+f.fl/2;
+    var grp=el('div',null,world);
+    grp.style.position='absolute';
+    var ry=S.orient==='EW'?90:(S.orient==='SN'?180:0);
+    grp.style.transform='translate3d('+cx+'px,0,'+cz+'px)'+(ry?' rotateY('+ry+'deg)':'');
+    var shift = S.hb? HBD/2 : 0;   // platform centre moves toward +z to make room for headboard
+
+    var L=bedL(), baseH, dc=DUVETS[S.duvet].c;
+    if(S.base==='lastare'){
+      baseH=100;
+      // units laid head→foot per side from the slot pickers
+      var flip=flippedSides();
+      [['slotsMinus',-1],['slotsPlus',1]].forEach(function(pair){
+        var side=pair[1], fl= side<0?flip.minus:flip.plus, pos=-100;
+        S[pair[0]].forEach(function(code,ix){
+          var u=UNITS[code]; if(!u||!u.w) return;
+          var c=pos+u.w/2; pos+=u.w;
+          var cb=box(grp,{w:42,h:100,d:u.w-2,x:side*49,y:0,z:shift+c,color:MAT.cup,skip:['bottom']});
+          var outer = side<0?cb.faces.left:cb.faces.right;
+          var inner = side<0?cb.faces.right:cb.faces.left;
+          var front = fl ? inner : outer, back = fl ? outer : inner;
+          if(u.kind==='doors') cupboardDoors(front,u.w);
+          else if(u.kind==='drawers') drawerFronts(front);
+          else cubbies(front,1,3,41+ix*7+(side<0?0:3),MAT.cup);  // open frame + ALTARLIDEN shelves
+          back.style.background=shade(MAT.cup,.96);
+          back.style.boxShadow='inset 0 0 0 2px '+MAT.cupLine;
+        });
+      });
+      // shadowy tunnel opening at the foot end (semi-transparent so flipped fronts peek through)
+      var endU = S.slotEnd!=='none' ? UNITS[S.slotEnd] : null;
+      if(S.lid) box(grp,{w:54,h:97,d:endU?150:196,x:0,y:0,z:shift+(endU?23:0),color:'#241E16',
+        skip:['bottom','top','back','left','right'],
+        tex:{front:'linear-gradient(rgba(24,19,13,.5),rgba(24,19,13,.92))'}});
+      // unit at the head end of the tunnel, reached by crawling in
+      if(endU){
+        var tc=box(grp,{w:Math.min(endU.w,54),h:96,d:42,x:0,y:0,z:shift-100+23,color:MAT.cup,skip:['bottom']});
+        if(endU.kind==='drawers') drawerFronts(tc.faces.front);
+        else if(endU.kind==='doors') cupboardDoors(tc.faces.front,endU.w);
+        else cubbies(tc.faces.front,1,3,97,MAT.cup);
+      }
+    } else {
+      var rows=S.base==='cubes2'?2:1;
+      baseH=rows*39-1;
+      var base=box(grp,{w:BEDW-6,h:baseH,d:L-10,x:0,y:0,z:shift,color:MAT.wood,skip:['bottom','top']});
+      cubbies(base.faces.right, 5, rows, 11);
+      cubbies(base.faces.left,  5, rows, 23);
+      cubbies(base.faces.front, 3, rows, 37);
+      cubbies(base.faces.back,  3, rows, 41);
+    }
+    if(S.lid){ // platform + bedding — untick "Show platform & mattress" to look inside
+      box(grp,{w:BEDW,h:4,d:L,x:0,y:baseH,z:shift,color:MAT.ply});
+      box(grp,{w:132,h:20,d:186,x:0,y:baseH+4,z:shift,color:MAT.mattress,radius:5});
+      box(grp,{w:BEDW+2,h:9,d:126,x:0,y:baseH+22,z:shift+27,color:dc,radius:6});
+      box(grp,{w:56,h:13,d:34,x:-33,y:baseH+24,z:shift-L/2+30,color:MAT.pillow,radius:7});
+      box(grp,{w:56,h:13,d:34,x: 33,y:baseH+24,z:shift-L/2+30,color:MAT.pillow,radius:7});
+    }
+    // headboard bookcase
+    if(S.hb){
+      var hbRows=S.base==='lastare'?4:3;
+      var hb=box(grp,{w:BEDW,h:hbH(),d:HBD,x:0,y:0,z:shift-L/2-HBD/2,color:MAT.wood,skip:['bottom']});
+      cubbies(hb.faces.front,4,hbRows,53);
+      cubbies(hb.faces.back,4,hbRows,59);
+    }
+    document.getElementById('slotsCard').style.display = S.base==='lastare' ? 'block' : 'none';
+    if(S.base==='lastare'){
+      var fl3=flippedSides();
+      document.getElementById('headM').textContent='Side 1 (head → foot)'+(fl3.minus?' — opens into the tunnel':' — opens into the room');
+      document.getElementById('headP').textContent='Side 2 (head → foot)'+(fl3.plus?' — opens into the tunnel':' — opens into the room');
+      var runOf=function(key){ return S[key].reduce(function(s,k2){return s+(UNITS[k2]?UNITS[k2].w:0);},0); };
+      var cost=S.slotsMinus.concat(S.slotsPlus).concat([S.slotEnd]).reduce(function(s,k2){
+        return s+((UNITS[k2]&&UNITS[k2].price)||0);},0);
+      document.getElementById('slotStats').textContent=
+        'Side 1 run: '+runOf('slotsMinus')+' cm · Side 2 run: '+runOf('slotsPlus')+' cm (platform is 200 cm) · units ≈ £'+cost.toFixed(0);
+    }
+
+    // desk + chair, in front of the window
+    if(S.desk){
+      var dr=deskRect();
+      var dcx=dr.x+dr.w/2, dcz=dr.z+dr.l/2;
+      box(world,{w:dr.w,h:3,d:dr.l,x:dcx,y:71,z:dcz,color:MAT.desk});
+      box(world,{w:dr.w-4,h:71,d:3,x:dcx,y:0,z:dr.z+2,color:shade(MAT.desk,.92)});
+      box(world,{w:dr.w-4,h:71,d:3,x:dcx,y:0,z:dr.z+dr.l-2,color:shade(MAT.desk,.92)});
+      var chx=dr.x-32;
+      box(world,{w:40,h:6,d:40,x:chx,y:42,z:dcz,color:'#8A7B68',radius:5});   // seat
+      box(world,{w:8,h:42,d:8,x:chx,y:0,z:dcz,color:'#6E6154'});              // pedestal
+      box(world,{w:6,h:45,d:40,x:chx-20,y:48,z:dcz,color:'#8A7B68',radius:5});// backrest
+    }
+    // floor-to-ceiling bookcase along the door wall (fades with its wall)
+    // built as individual units — one huge face invites browser plane-sorting artifacts
+    if(S.bc){
+      var bcr=bcRect();
+      var horizBC=(S.doorWall==='N'||S.doorWall==='S');
+      var bcLen=horizBC?bcr.w:bcr.l;
+      if(bcLen>35){
+        // the purchased combo is BILLY 80 + 40 + 80, each one column of 7 bays
+        var widths;
+        if(bcLen>=195){ widths=[80,40,80]; }
+        else { var nU=Math.max(1,Math.round(bcLen/76)); widths=[]; for(var q=0;q<nU;q++) widths.push(bcLen/nU); }
+        var innerFace={N:'front',S:'back',W:'right',E:'left'}[S.doorWall];
+        var pos=0;
+        widths.forEach(function(wU,ui){
+          var u0=pos+wU/2, ub; pos+=wU;
+          if(horizBC){
+            ub=box(wallGroups[S.doorWall],{w:wU-3,h:237,d:28,x:bcr.x+u0,y:0,
+              z:S.doorWall==='N'?-D/2+15:D/2-15,color:MAT.billy,skip:['bottom']});
+          } else {
+            ub=box(wallGroups[S.doorWall],{w:28,h:237,d:wU-3,z:bcr.z+u0,y:0,
+              x:S.doorWall==='W'?-W/2+15:W/2-15,color:MAT.billy,skip:['bottom']});
+          }
+          cubbies(ub.faces[innerFace],1,7,71+ui*7,shade(MAT.billy,1.02),wU);
+        });
+      }
+    }
+    // MOSSLANDA picture ledges (walnut) above the bed head
+    if(S.orient==='EW'){
+      var brL=bedRect();
+      box(wallGroups['W'],{w:5,h:4,d:55,x:-W/2+2.5,y:150,z:brL.z+70,color:MAT.billy});
+      box(wallGroups['W'],{w:5,h:4,d:55,x:-W/2+2.5,y:182,z:brL.z+70,color:MAT.billy});
+    }
+    // wardrobe
+    if(S.ward){
+      var wr=wardRect();
+      var wb=box(world,{w:wr.w,h:182,d:wr.l,x:wr.x+wr.w/2,y:0,z:wr.z+wr.l/2,color:MAT.wardrobe,skip:['bottom']});
+      var doorline='linear-gradient(90deg,'+MAT.wardrobe+' 0 49.5%,'+shade(MAT.wardrobe,.7)+' 49.5% 50.5%,'+MAT.wardrobe+' 50.5%)';
+      wb.faces.back.style.background=doorline;
+      wb.faces.front.style.background=doorline;
+    }
+
+    applyView(); drawPlan(); metrics(); warnings(); refreshCfg();
+  }
+
+  // ---- view / camera ----
+  var viewport=document.getElementById('viewport');
+  function applyView(){
+    var r=viewport.getBoundingClientRect();
+    var fit=Math.min(r.width/(W*1.55), r.height/(D*1.85));
+    world.style.transform='scale('+(fit*S.zoom)+') rotateX('+(-S.pitch)+'deg) rotateY('+S.yaw+'deg)';
+    // ghost walls facing the camera
+    var y=S.yaw*Math.PI/180;
+    var facing={N:-Math.cos(y), S:Math.cos(y), W:Math.sin(y), E:-Math.sin(y)};
+    for(var k in wallGroups) wallGroups[k].classList.toggle('ghosted', facing[k]>0.12);
+  }
+
+  var drag=null;
+  viewport.addEventListener('pointerdown',function(e){
+    if(e.target.closest && e.target.closest('.viewbtns')) return;
+    drag={x:e.clientX,y:e.clientY}; viewport.setPointerCapture(e.pointerId);
+  });
+  viewport.addEventListener('pointermove',function(e){
+    if(!drag)return;
+    S.yaw+=(e.clientX-drag.x)*0.4;
+    S.pitch=Math.min(88,Math.max(4,S.pitch+(e.clientY-drag.y)*0.25));
+    drag={x:e.clientX,y:e.clientY}; applyView();
+  });
+  viewport.addEventListener('pointerup',function(){drag=null;});
+  viewport.addEventListener('wheel',function(e){ e.preventDefault();
+    S.zoom=Math.min(2.2,Math.max(.55,S.zoom*(e.deltaY>0?0.92:1.08))); applyView();
+  },{passive:false});
+  document.getElementById('btn3d').addEventListener('click',function(){S.yaw=33;S.pitch=27;S.zoom=1;applyView();});
+  document.getElementById('btnTop').addEventListener('click',function(){S.yaw=0;S.pitch=86;S.zoom=.95;applyView();});
+  window.addEventListener('resize',applyView);
+
+  // ---- 2D plan ----
+  var planC=document.getElementById('plan');
+  function drawPlan(){ renderPlan(planC, planC.clientWidth||290, 230, window.devicePixelRatio||1, 1); }
+  function renderPlan(canvas,cw,ch,dpr,k){
+    canvas.width=cw*dpr; canvas.height=ch*dpr;
+    var ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+    var css=getComputedStyle(document.documentElement);
+    var ink=css.getPropertyValue('--ink').trim()||'#2E2A26';
+    var mut=css.getPropertyValue('--muted').trim()||'#7A736A';
+    var bg=css.getPropertyValue('--panel').trim()||'#FFFFFF';
+    ctx.fillStyle=bg; ctx.fillRect(0,0,cw,ch);
+    var sc=Math.min((cw-46*k)/W,(ch-40*k)/D);
+    var ox=(cw-W*sc)/2, oz=(ch-D*sc)/2+6*k;
+    function X(x){return ox+(x+W/2)*sc;} function Z(z){return oz+(z+D/2)*sc;}
+    var winCz=-D/2+S.winOff, dg=doorGeom();
+    // grid 50cm
+    ctx.strokeStyle=mut; ctx.globalAlpha=.14; ctx.lineWidth=k; ctx.beginPath();
+    for(var gx=0;gx<=W;gx+=50){ctx.moveTo(X(gx-W/2),Z(-D/2));ctx.lineTo(X(gx-W/2),Z(D/2));}
+    for(var gz=0;gz<=D;gz+=50){ctx.moveTo(X(-W/2),Z(gz-D/2));ctx.lineTo(X(W/2),Z(gz-D/2));}
+    ctx.stroke(); ctx.globalAlpha=1;
+    // walls
+    ctx.strokeStyle=ink; ctx.lineWidth=5*k; ctx.strokeRect(X(-W/2)-2.5*k,Z(-D/2)-2.5*k,W*sc+5*k,D*sc+5*k);
+    // window (east)
+    ctx.strokeStyle='#7FA8B5'; ctx.lineWidth=5*k; ctx.beginPath();
+    ctx.moveTo(X(W/2)+2.5*k,Z(winCz-S.winW/2)); ctx.lineTo(X(W/2)+2.5*k,Z(winCz+S.winW/2)); ctx.stroke();
+    // door gap + swing arc
+    ctx.strokeStyle=bg; ctx.lineWidth=6*k; ctx.beginPath();
+    if(dg.horiz){ var zz=Z(dg.hz)+(dg.wall==='N'?-2.5*k:2.5*k);
+      ctx.moveTo(X(dg.hx),zz); ctx.lineTo(X(dg.hx+DOOR.w),zz); }
+    else { var xx=X(dg.hx)+(dg.wall==='W'?-2.5*k:2.5*k);
+      ctx.moveTo(xx,Z(dg.hz)); ctx.lineTo(xx,Z(dg.hz+DOOR.w)); }
+    ctx.stroke();
+    ctx.strokeStyle=mut; ctx.lineWidth=k; ctx.setLineDash([3*k,3*k]); ctx.beginPath();
+    ctx.arc(X(dg.hx),Z(dg.hz),DOOR.w*sc,dg.a0,dg.a1); ctx.stroke(); ctx.setLineDash([]);
+    function rect(r,fill,label){
+      ctx.fillStyle=fill; ctx.fillRect(X(r.x),Z(r.z),r.w*sc,r.l*sc);
+      ctx.strokeStyle=ink; ctx.lineWidth=k; ctx.strokeRect(X(r.x),Z(r.z),r.w*sc,r.l*sc);
+      if(label){ ctx.fillStyle=ink; ctx.font=(10*k)+'px Segoe UI,sans-serif'; ctx.textAlign='center';
+        ctx.fillText(label,X(r.x)+r.w*sc/2,Z(r.z)+r.l*sc/2+3*k); }
+    }
+    rect({x:W/2-12,z:winCz-S.winW/2,w:12,l:S.winW},'#D9D5CC','');
+    if(S.bc) rect(bcRect(),'#D8B58A88','books');
+    if(S.chOn) rect(chimneyRect(),'#D8CFBF','chimney');
+    if(S.chOn&&S.tv){
+      var g2=tvGeom(chimneyRect()), an=tvAngles();
+      var bR=g2.B*Math.PI/180;
+      function W2(lx,lz){ return [X(g2.mx+lx*Math.cos(bR)+lz*Math.sin(bR)),
+                                  Z(g2.mz+(-lx*Math.sin(bR)+lz*Math.cos(bR)))]; }
+      var g1r=an.g1*Math.PI/180, g2wr=(90-25*an.t)*Math.PI/180, psi=(90*an.t)*Math.PI/180;
+      var ex=-24*Math.sin(g1r), ez=-24*Math.cos(g1r);
+      var tx=ex-24*Math.sin(g2wr), tz=ez-24*Math.cos(g2wr);
+      var pm=W2(0,0), pe=W2(ex,ez), pt=W2(tx,tz);
+      ctx.strokeStyle='#6B6660'; ctx.lineWidth=1.5*k; ctx.beginPath();
+      ctx.moveTo(pm[0],pm[1]); ctx.lineTo(pe[0],pe[1]); ctx.lineTo(pt[0],pt[1]); ctx.stroke();
+      var p1=W2(tx+g2.tw/2*Math.cos(psi), tz-g2.tw/2*Math.sin(psi));
+      var p2=W2(tx-g2.tw/2*Math.cos(psi), tz+g2.tw/2*Math.sin(psi));
+      ctx.strokeStyle='#3A3A3A'; ctx.lineWidth=3*k; ctx.beginPath();
+      ctx.moveTo(p1[0],p1[1]); ctx.lineTo(p2[0],p2[1]); ctx.stroke();
+    }
+    var br=bedRect(); rect(br,DUVETS[S.duvet].c+'66','BED '+BEDW+'×'+bedL());
+    if(S.desk) rect(deskRect(),'#C7A87E88','desk');
+    if(S.ward) rect(wardRect(),'#CBAF8888','wardrobe');
+    // dims
+    ctx.fillStyle=mut; ctx.font=(10.5*k)+'px Segoe UI,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('3.53 m', X(0), Z(-D/2)-8*k);
+    ctx.save(); ctx.translate(X(-W/2)-10*k,Z(0)); ctx.rotate(-Math.PI/2);
+    ctx.fillText('2.82 m',0,0); ctx.restore();
+  }
+
+  // ---- metrics / warnings / shop ----
+  function metrics(){
+    var baseH, items;
+    if(S.base==='lastare'){
+      baseH=100;
+      var all=S.slotsMinus.concat(S.slotsPlus).concat([S.slotEnd]);
+      var cnt=0, vol=0;
+      all.forEach(function(k){ var u=UNITS[k]; if(u&&u.w){cnt++; vol+=u.w*42*100/1e6;} });
+      document.getElementById('stCub').textContent=cnt;
+      document.getElementById('stCubK').textContent='cupboards';
+      document.getElementById('stStor').textContent=vol.toFixed(1)+' m³';
+      items=[
+        'ORDERED ✓ (delivery Mon 17 Aug): 2 × LASTARE frame 80 cm (open + 3 ALTARLIDEN shelves each)',
+        'ORDERED ✓ 2 × LASTARE frame with doors 60 cm (+ DRAGSMARK handles, 1 × 60 cm clothes rail)',
+        'ORDERED ✓ 2 × LASTARE frame 40 cm (open + 3 ALTARLIDEN shelves each)',
+        'ORDERED ✓ 1 × LASTARE chest of 4 drawers 40 cm'
+      ];
+      var fl2=flippedSides(), hasEnd=S.slotEnd!=='none';
+      var tunSide=(fl2.minus?S.slotsMinus:[]).concat(fl2.plus?S.slotsPlus:[])
+        .filter(function(k){return UNITS[k]&&UNITS[k].w;}).length;
+      if(tunSide>0) items.push(tunSide+' wall-side unit'+(tunSide>1?'s':'')+
+        ' flipped to open into the tunnel — '+(cnt-tunSide-(hasEnd?1:0))+' open into the room, '+
+        (tunSide+(hasEnd?1:0))+' reached through the tunnel');
+      items.push('STILL NEEDED: 18 mm plywood platform ~140 × 200 cm, screwed to every unit');
+      items.push('STILL NEEDED: UK double mattress 135 × 190 cm — top ≈ 1.22 m, add a step stool');
+    } else {
+      var rows=S.base==='cubes2'?2:1;
+      var cub=rows*16+(S.hb?12:0);
+      baseH=rows*39;
+      document.getElementById('stCub').textContent=cub;
+      document.getElementById('stCubK').textContent='book cubbies';
+      document.getElementById('stStor').textContent=Math.round(cub*42/10)*10+' L';
+      items = rows===1 ? [
+        '2 × 4-cube shelf rails, laid long-ways (e.g. IKEA KALLAX 1×4 — 147 × 39 × 39 cm) as the two sides',
+        '1 × row of 3 cubes across the head end (KALLAX 1×4 trimmed, or 2 × 2 unit laid flat)'
+      ] : [
+        '2 × KALLAX 2×4 on their sides (147 × 77 × 39 cm) as the two side rails',
+        '1 × KALLAX 2×2 (77 × 77 × 39 cm) turned across the head end'
+      ];
+      items.push('18 mm plywood platform, ~140 × 195 cm, screwed to the units from above');
+      items.push('UK double mattress, 135 × 190 cm');
+    }
+    if(S.hb) items.push('1 × tall cube bookcase as headboard — must be strapped to the wall');
+    if(S.chOn&&S.tv) items.push('STILL NEEDED: '+S.tvSize+'″ TV + full-motion articulating bracket (double-jointed arm, ~45 cm reach) on the chimney breast — masonry fixings into brick, not just plaster');
+    if(S.bc) items.push('ORDERED ✓ BILLY bookcase combo 200 × 28 × 237 cm, brown walnut (+ extra height extensions) on the door wall — anchor to the wall');
+    items.push('ORDERED ✓ 2 × MOSSLANDA picture ledges 55 cm, walnut — above the bed head');
+    items.push('⚠ Order also has EXTRA BILLY height extensions (1 × 40 + 2 × 80 cm, ~£53) on top of the combo — likely ordered by mistake, consider returning');
+    items.push('IKEA order total £675.25 inc. delivery');
+    document.getElementById('stBedH').textContent=(baseH+4+20)+' cm';
+    var used=BEDW*bedL()+(S.hb?BEDW*HBD:0)+(S.chOn?S.chW*S.chD:0)+(S.desk?55*110:0)+(S.ward?100*55:0);
+    if(S.bc){ var br2=bcRect(); used+=br2.w*br2.l; }
+    document.getElementById('stFree').textContent=((W*D-used)/10000).toFixed(1)+' m²';
+    var shop=document.getElementById('shop'); shop.innerHTML='';
+    items.forEach(function(t){ var li=document.createElement('li'); li.textContent=t; shop.appendChild(li); });
+  }
+
+  function warnings(){
+    var w=[], br=bedRect();
+    if(S.chOn && overlap(br,chimneyRect())) w.push('The bed overlaps the chimney breast — slide it along or pick another wall.');
+    if(S.desk && overlap(br,deskRect())) w.push('The bed overlaps the desk.');
+    if(S.ward && overlap(br,wardRect())) w.push('The bed overlaps the wardrobe.');
+    if(S.bc && overlap(br,bcRect())) w.push('The bed overlaps the bookcase on the door wall.');
+    // door swing: hinge at the corner end of the door
+    var dg=doorGeom(), hx=dg.hx, hz=dg.hz, R=DOOR.w;
+    var nx=Math.max(br.x,Math.min(hx,br.x+br.w)), nz=Math.max(br.z,Math.min(hz,br.z+br.l));
+    if((nx-hx)*(nx-hx)+(nz-hz)*(nz-hz) < R*R) w.push('The bed is inside the door swing — it may block the door opening.');
+    var rad={x:W/2-14,z:-D/2+S.winOff-(S.winW/2+5),w:14,l:S.winW+10};
+    if(overlap(br,rad)) w.push('The bed covers the radiator under the window — leave a gap or shift it along.');
+    // slot sanity: stock vs layout, and run length vs platform
+    if(S.base==='lastare'){
+      var use={};
+      S.slotsMinus.concat(S.slotsPlus).concat([S.slotEnd]).forEach(function(k){
+        if(UNITS[k]&&UNITS[k].w) use[k]=(use[k]||0)+1; });
+      Object.keys(use).forEach(function(k){
+        var st=STOCK[k]||0;
+        if(use[k]>st) w.push('Layout uses '+use[k]+' × '+UNITS[k].label+' but the order has '+st+
+          (st?'':' (not ordered)')+' — swap one out or buy another (£'+UNITS[k].price+').');
+      });
+      [['slotsMinus','Side 1'],['slotsPlus','Side 2']].forEach(function(p){
+        var run=S[p[0]].reduce(function(s,k){return s+(UNITS[k]?UNITS[k].w:0);},0);
+        if(run>200) w.push(p[1]+' run is '+run+' cm — longer than the 200 cm platform.');
+      });
+    }
+    var wrap=document.getElementById('warns'); wrap.innerHTML='';
+    w.forEach(function(t){ var c=el('div','warnchip',wrap); c.textContent=t; });
+  }
+
+  // ---- controls wiring ----
+  function bindRange(id,key,outId,fmt){
+    var r=document.getElementById(id),o=document.getElementById(outId);
+    function show(){o.textContent=fmt(S[key]);}
+    r.addEventListener('input',function(){S[key]=+r.value;show();build();});
+    show(); return r;
+  }
+  var cm=function(v){return v+' cm';};
+  var gW=bindRange('gapW','gapW','gapWv',cm);
+  var gN=bindRange('gapN','gapN','gapNv',cm);
+  bindRange('chW','chW','chWv',cm);
+  bindRange('chD','chD','chDv',cm);
+  bindRange('chOff','chOff','chOffv',cm);
+  bindRange('doorOff','doorOff','doorOffv',cm);
+  bindRange('winW','winW','winWv',cm);
+  bindRange('winOff','winOff','winOffv',cm);
+  // TV swing animates the three arm joints instead of rebuilding the scene
+  function updateTv(){
+    if(tvJ1&&S.chOn&&S.tv){
+      var an=tvAngles();
+      tvJ1.style.transform='rotateY('+an.g1+'deg)';
+      tvJ2.style.transform='translate3d(0,0,-24px) rotateY('+an.d2+'deg)';
+      tvJ3.style.transform='translate3d(0,0,-24px) rotateY('+an.d3+'deg)';
+    }
+  }
+  (function(){
+    var r=document.getElementById('tvSwing'), o=document.getElementById('tvSwingv');
+    function show(){ o.textContent=S.tvSwing+'°'; }
+    r.addEventListener('input',function(){ S.tvSwing=+r.value; show(); updateTv(); drawPlan(); refreshCfg(); });
+    show();
+    var tvLast=90;
+    document.getElementById('tvGo').addEventListener('click',function(){
+      if(S.tvSwing>0){ tvLast=S.tvSwing; S.tvSwing=0; } else { S.tvSwing=tvLast||90; }
+      r.value=S.tvSwing; show(); updateTv(); drawPlan(); refreshCfg();
+    });
+  })();
+
+  function clampSliders(){
+    var f=footprint();
+    gW.max=W-f.fw; gN.max=D-f.fl;
+    if(S.gapW>+gW.max){S.gapW=+gW.max; gW.value=S.gapW; document.getElementById('gapWv').textContent=cm(S.gapW);}
+    if(S.gapN>+gN.max){S.gapN=+gN.max; gN.value=S.gapN; document.getElementById('gapNv').textContent=cm(S.gapN);}
+    var co=document.getElementById('chOff');
+    var along=(S.chWall==='N'||S.chWall==='S')?W:D;
+    co.max=along-S.chW;
+    if(S.chOff>+co.max){S.chOff=+co.max;co.value=S.chOff;document.getElementById('chOffv').textContent=cm(S.chOff);}
+    var dOff=document.getElementById('doorOff');
+    dOff.max=((S.doorWall==='N'||S.doorWall==='S')?W:D)-DOOR.w;
+    if(S.doorOff>+dOff.max){S.doorOff=+dOff.max;dOff.value=S.doorOff;document.getElementById('doorOffv').textContent=cm(S.doorOff);}
+    var wOff=document.getElementById('winOff');
+    wOff.min=Math.ceil(S.winW/2); wOff.max=D-Math.ceil(S.winW/2);
+    if(S.winOff<+wOff.min){S.winOff=+wOff.min;wOff.value=S.winOff;document.getElementById('winOffv').textContent=cm(S.winOff);}
+    if(S.winOff>+wOff.max){S.winOff=+wOff.max;wOff.value=S.winOff;document.getElementById('winOffv').textContent=cm(S.winOff);}
+  }
+  ['orient','base','chWall','doorWall','doorHinge','tvSize'].forEach(function(id){
+    document.getElementById(id).addEventListener('change',function(e){
+      S[id]=e.target.value;
+      clampSliders(); build();
+    });
+  });
+  ['hb','lid','chOn','tv','desk','ward','bc'].forEach(function(id){
+    document.getElementById(id).addEventListener('change',function(e){
+      S[id]=e.target.checked; clampSliders(); build();
+    });
+  });
+
+  // under-bed slot pickers with IKEA links
+  var slotSyncs=[];
+  function slotRow(parent,label,key,idx,isEnd){
+    var row=el('div','row',parent);
+    var lab=el('label',null,row); lab.textContent=label;
+    var sel=document.createElement('select'); row.appendChild(sel);
+    var opts=isEnd?['dr40','o40','none']:['o80','d80','d60','o40','dr40','none'];
+    opts.forEach(function(k){
+      var u=UNITS[k], op=document.createElement('option');
+      op.value=k; op.textContent=u.label+(u.price?' · £'+u.price:'');
+      sel.appendChild(op);
+    });
+    var a=el('a','ikea',row); a.target='_blank'; a.rel='noopener'; a.textContent='IKEA ↗';
+    function sync(){
+      var code=isEnd?S.slotEnd:S[key][idx];
+      sel.value=code;
+      var u=UNITS[code];
+      if(u&&u.url){ a.href=u.url; a.style.visibility='visible'; a.title=u.label+' — article '+u.art; }
+      else a.style.visibility='hidden';
+    }
+    sel.addEventListener('change',function(){
+      if(isEnd) S.slotEnd=sel.value; else S[key][idx]=sel.value;
+      sync(); clampSliders(); build();
+    });
+    sync(); slotSyncs.push(sync);
+  }
+  ['Head','Middle','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsM'),nm,'slotsMinus',i,false); });
+  ['Head','Middle','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsP'),nm,'slotsPlus',i,false); });
+  slotRow(document.getElementById('slotsE'),'Unit','slotEnd',0,true);
+  var sw=document.getElementById('duvetSw');
+  DUVETS.forEach(function(d,i){
+    var b=document.createElement('button');
+    b.type='button'; b.className='swatch'+(i===S.duvet?' on':'');
+    b.style.background=d.c; b.title=d.name; b.setAttribute('aria-label','Duvet: '+d.name);
+    b.addEventListener('click',function(){
+      S.duvet=i;
+      sw.querySelectorAll('.swatch').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on'); build();
+    });
+    sw.appendChild(b);
+  });
+
+  // ---- export / import ----
+  var cfgTA=document.getElementById('cfg');
+  var KEYS=['orient','gapW','gapN','base','slotsMinus','slotsPlus','slotEnd','hb','duvet','chOn','chWall','chW','chD','chOff',
+            'tv','tvSize','tvSwing','doorWall','doorOff','doorHinge','winW','winOff','desk','ward','bc'];
+  function cfgText(){ var o={}; KEYS.forEach(function(kk){o[kk]=S[kk];}); return JSON.stringify(o); }
+  function refreshCfg(){ if(document.activeElement!==cfgTA) cfgTA.value=cfgText(); }
+  document.getElementById('btnCopy').addEventListener('click',function(){
+    var b=this;
+    cfgTA.value=cfgText(); cfgTA.focus(); cfgTA.select();
+    function done(ok){
+      b.textContent = ok ? 'Copied ✓' : 'Press Ctrl+C to copy';
+      setTimeout(function(){ b.textContent='Copy settings'; },1800);
+    }
+    function legacy(){ var ok=false; try{ ok=document.execCommand('copy'); }catch(e){} done(ok); }
+    var p=null;
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText) p=navigator.clipboard.writeText(cfgTA.value); }catch(e){}
+    if(p&&p.then){ p.then(function(){done(true);}, legacy); } else { legacy(); }
+  });
+  document.getElementById('btnApply').addEventListener('click',function(){
+    try{
+      var o=JSON.parse(cfgTA.value);
+      KEYS.forEach(function(kk){ if(Object.prototype.hasOwnProperty.call(o,kk)) S[kk]=o[kk]; });
+      // older saved layouts: tEnd boolean instead of slotEnd
+      if(Object.prototype.hasOwnProperty.call(o,'tEnd')&&!o.slotEnd) S.slotEnd=o.tEnd?'dr40':'none';
+      ['slotsMinus','slotsPlus'].forEach(function(kk){
+        if(!Array.isArray(S[kk])||S[kk].length!==3||S[kk].some(function(k2){return !UNITS[k2];})) S[kk]=['o80','d60','o40'];
+      });
+      if(!UNITS[S.slotEnd]) S.slotEnd='dr40';
+      syncControls(); build();
+    }catch(e){ cfgTA.value='Could not read that — paste the exact text from “Copy settings”, then press Apply.'; }
+  });
+  document.getElementById('btnPng').addEventListener('click',function(){
+    var b=this;
+    var c=document.createElement('canvas');
+    renderPlan(c,1000,800,1,3.2);
+    function note(t){ b.textContent=t; setTimeout(function(){ b.textContent='Download floor plan (PNG)'; },1800); }
+    function fallback(){ // outside the artifact viewer, a plain anchor works
+      var a=document.createElement('a');
+      a.download='madisons-room-plan.png'; a.href=c.toDataURL('image/png');
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    var use=(window.claude&&window.claude.use)?window.claude.use('downloads'):Promise.resolve(null);
+    use.then(function(dl){
+      if(!dl){ fallback(); return; }
+      c.toBlob(function(blob){
+        if(!blob){ note('Could not render'); return; }
+        dl.save({filename:'madisons-room-plan.png',data:blob}).then(
+          function(){ note('Saved ✓'); },
+          function(err){ if(!(err&&err.code==='declined')) note('Could not save'); });
+      },'image/png');
+    });
+  });
+  function syncControls(){
+    ['orient','base','chWall','doorWall','doorHinge','tvSize'].forEach(function(id){document.getElementById(id).value=S[id];});
+    ['hb','lid','chOn','tv','desk','ward','bc'].forEach(function(id){document.getElementById(id).checked=!!S[id];});
+    slotSyncs.forEach(function(f){f();});
+    document.getElementById('tvSwing').value=S.tvSwing;
+    document.getElementById('tvSwingv').textContent=S.tvSwing+'°';
+    [['gapW','gapWv'],['gapN','gapNv'],['chW','chWv'],['chD','chDv'],['chOff','chOffv'],
+     ['doorOff','doorOffv'],['winW','winWv'],['winOff','winOffv']].forEach(function(p){
+      document.getElementById(p[0]).value=S[p[0]];
+      document.getElementById(p[1]).textContent=cm(S[p[0]]);
+    });
+    var i=0;
+    sw.querySelectorAll('.swatch').forEach(function(x){x.classList.toggle('on',i++===S.duvet);});
+  }
+
+  // theme change → redraw canvas colours
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawPlan);}catch(e){}
+  new MutationObserver(drawPlan).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+  clampSliders(); build();
+})();
+</script>
