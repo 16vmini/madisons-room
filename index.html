@@ -135,7 +135,7 @@
       <div class="grouphead">Tunnel end (max 40 cm wide)</div>
       <div id="slotsE"></div>
       <div class="note" id="slotStats"></div>
-      <div class="note">Links open the exact item on ikea.com so you can check against the order. Ordered stock: 2 × 80 open, 2 × 60 with doors, 2 × 40 open, 1 × chest of drawers.</div>
+      <div class="note">Links open the exact item on ikea.com so you can check against the order. Ordered stock: 2 × 80 open, 2 × 60 with doors, 2 × 40 open, 1 × chest of drawers — 400 cm total, exactly two 200 cm runs.</div>
     </div>
 
     <div class="card">
@@ -253,7 +253,7 @@
   // ---- state (defaults = measured room) ----
   var S = {
     orient:'EW', gapW:0, gapN:122, base:'lastare', hb:false, duvet:0, lid:true,
-    slotsMinus:['o80','d60','o40'], slotsPlus:['o80','d60','o40'], slotEnd:'dr40',
+    slotsMinus:['o80','d60','d60','none'], slotsPlus:['o80','o40','dr40','o40'], slotEnd:'none',
     chOn:true, chWall:'S', chW:165, chD:20, chOff:94,
     tv:true, tvSize:'43', tvSwing:35, bc:true,
     doorWall:'N', doorOff:233, doorHinge:'hi', winW:75, winOff:211,
@@ -950,8 +950,8 @@
     });
     sync(); slotSyncs.push(sync);
   }
-  ['Head','Middle','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsM'),nm,'slotsMinus',i,false); });
-  ['Head','Middle','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsP'),nm,'slotsPlus',i,false); });
+  ['Head','2nd','3rd','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsM'),nm,'slotsMinus',i,false); });
+  ['Head','2nd','3rd','Foot'].forEach(function(nm,i){ slotRow(document.getElementById('slotsP'),nm,'slotsPlus',i,false); });
   slotRow(document.getElementById('slotsE'),'Unit','slotEnd',0,true);
   var sw=document.getElementById('duvetSw');
   DUVETS.forEach(function(d,i){
@@ -991,9 +991,11 @@
       // older saved layouts: tEnd boolean instead of slotEnd
       if(Object.prototype.hasOwnProperty.call(o,'tEnd')&&!o.slotEnd) S.slotEnd=o.tEnd?'dr40':'none';
       ['slotsMinus','slotsPlus'].forEach(function(kk){
-        if(!Array.isArray(S[kk])||S[kk].length!==3||S[kk].some(function(k2){return !UNITS[k2];})) S[kk]=['o80','d60','o40'];
+        if(Array.isArray(S[kk])&&S[kk].length===3) S[kk]=S[kk].concat(['none']); // older 3-slot layouts
+        if(!Array.isArray(S[kk])||S[kk].length!==4||S[kk].some(function(k2){return !UNITS[k2];}))
+          S[kk]=['o80','d60','o40','none'];
       });
-      if(!UNITS[S.slotEnd]) S.slotEnd='dr40';
+      if(!UNITS[S.slotEnd]) S.slotEnd='none';
       syncControls(); build();
     }catch(e){ cfgTA.value='Could not read that — paste the exact text from “Copy settings”, then press Apply.'; }
   });
