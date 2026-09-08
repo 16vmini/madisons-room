@@ -591,12 +591,27 @@
       cubbies(base.faces.front, 3, rows, 37);
       cubbies(base.faces.back,  3, rows, 41);
     }
-    if(S.lid){ // platform + bedding — untick "Show platform & mattress" to look inside
-      box(grp,{w:BEDW,h:4,d:L,x:0,y:baseH,z:shift,color:MAT.ply});
-      box(grp,{w:132,h:20,d:186,x:0,y:baseH+4,z:shift,color:MAT.mattress,radius:5});
-      box(grp,{w:BEDW+2,h:9,d:126,x:0,y:baseH+22,z:shift+27,color:dc,radius:6});
-      box(grp,{w:56,h:13,d:34,x:-33,y:baseH+24,z:shift-L/2+30,color:MAT.pillow,radius:7});
-      box(grp,{w:56,h:13,d:34,x: 33,y:baseH+24,z:shift-L/2+30,color:MAT.pillow,radius:7});
+    var topY;
+    if(S.base==='lastare'){
+      // as built: 2 × Ex22×50 rails (43×18 actual) screwed to the unit faces 18 mm below the tops,
+      // carrying 16 × Ex22×75 slats (69×18) that bridge the tunnel — no ply platform
+      topY=baseH;
+      var railH=4.3, railT=1.8, slatT=1.8, slatW=6.9, nSlat=16;
+      box(grp,{w:railT,h:railH,d:196,x:-(28-railT/2),y:baseH-slatT-railH,z:shift,color:'#E4D5AF'});
+      box(grp,{w:railT,h:railH,d:196,x: (28-railT/2),y:baseH-slatT-railH,z:shift,color:'#E4D5AF'});
+      var span=L-slatW, z0=-L/2+slatW/2;
+      for(var si=0;si<nSlat;si++){
+        box(grp,{w:55,h:slatT,d:slatW,x:0,y:baseH-slatT,z:shift+z0+si*(span/(nSlat-1)),color:'#EFE2BC'});
+      }
+    } else {
+      topY=baseH+4;
+      if(S.lid) box(grp,{w:BEDW,h:4,d:L,x:0,y:baseH,z:shift,color:MAT.ply});
+    }
+    if(S.lid){ // bedding — untick "Show platform & mattress" to see the slat bridge
+      box(grp,{w:132,h:20,d:186,x:0,y:topY,z:shift,color:MAT.mattress,radius:5});
+      box(grp,{w:BEDW+2,h:9,d:126,x:0,y:topY+18,z:shift+27,color:dc,radius:6});
+      box(grp,{w:56,h:13,d:34,x:-33,y:topY+20,z:shift-L/2+30,color:MAT.pillow,radius:7});
+      box(grp,{w:56,h:13,d:34,x: 33,y:topY+20,z:shift-L/2+30,color:MAT.pillow,radius:7});
     }
     // headboard bookcase
     if(S.hb){
@@ -796,8 +811,9 @@
       if(tunSide>0) items.push(tunSide+' wall-side unit'+(tunSide>1?'s':'')+
         ' flipped to open into the tunnel — '+(cnt-tunSide-(hasEnd?1:0))+' open into the room, '+
         (tunSide+(hasEnd?1:0))+' reached through the tunnel');
-      items.push('STILL NEEDED: 18 mm plywood platform ~140 × 200 cm, screwed to every unit');
-      items.push('STILL NEEDED: UK double mattress 135 × 190 cm — top ≈ 1.22 m, add a step stool');
+      items.push('BOUGHT ✓ slat bridge (Alsford whitewood): 2 × Ex22×50 rails at 2 m, screwed 18 mm below the unit tops + 16 × Ex22×75 slats cut ~51 cm');
+      items.push('Slat gaps 59.7 mm, set with two 3D-printed spacers (slat-spacer.stl in the repo) — fix the end slats first, then work from both ends toward the middle');
+      items.push('STILL NEEDED: UK double mattress 135 × 190 cm — top ≈ 1.20 m, add a step stool');
     } else {
       var rows=S.base==='cubes2'?2:1;
       var cub=rows*16+(S.hb?12:0);
@@ -821,7 +837,7 @@
     items.push('ORDERED ✓ 2 × MOSSLANDA picture ledges 55 cm, walnut — above the bed head');
     items.push('⚠ Order also has EXTRA BILLY height extensions (1 × 40 + 2 × 80 cm, ~£53) on top of the combo — likely ordered by mistake, consider returning');
     items.push('IKEA order total £675.25 inc. delivery');
-    document.getElementById('stBedH').textContent=(baseH+4+20)+' cm';
+    document.getElementById('stBedH').textContent=(baseH+(S.base==='lastare'?0:4)+20)+' cm';
     var used=BEDW*bedL()+(S.hb?BEDW*HBD:0)+(S.chOn?S.chW*S.chD:0)+(S.desk?55*110:0)+(S.ward?100*55:0);
     if(S.bc){ var br2=bcRect(); used+=br2.w*br2.l; }
     document.getElementById('stFree').textContent=((W*D-used)/10000).toFixed(1)+' m²';
